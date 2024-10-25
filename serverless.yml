@@ -1,0 +1,46 @@
+service: websocket-api-with-dynamodb
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-south-1
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:*
+          Resource: ${env:DYNAMODB_TABLE_ARN}
+        - Effect: Allow
+          Action:
+            - execute-api:ManageConnections
+          Resource: arn:aws:execute-api:::/@connections/*
+functions:
+  websocket-connect:
+    handler: connect.handler
+    events:
+      - websocket:
+          route: $connect
+          authorizer:
+            name: websocket-auth
+            identitySource:
+              - route.request.header.Auth
+  websocket-disconnect:
+    handler: disconnect.handler
+    events:
+      - websocket:
+          route: $disconnect
+  websocket-default:
+    handler: default.handler
+    events:
+      - websocket:
+          route: $default
+  websocket-message:
+    handler: message.handler
+    events:
+      - websocket:
+          route: message
+  websocket-auth:
+    handler: auth.handler
+
+plugins:
+  - serverless-dotenv-plugin
